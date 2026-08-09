@@ -41,7 +41,17 @@ export default function Leases() {
   };
 
   const generatePayments = async (c: any) => {
-    const n = Number(prompt("How many months of payments to generate from the lease start?", "12"));
+    const { data: existing } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("contract_id", c.id);
+    if (existing && existing.length > 0) {
+      const replace = confirm(
+        `This lease already has ${existing.length} payment(s) generated. Press OK to DELETE them and generate a fresh set, or Cancel to keep the existing ones.`
+      );
+      if (!replace) return;
+      await supabase.from("payments").delete().eq("contract_id", c.id);
+    } const n = Number(prompt("How many months of payments to generate from the lease start?", "12"));
     if (!n || n < 1) return;
     const start = new Date(c.start_date + "T00:00:00");
     const rows = Array.from({ length: n }, (_, i) => {
