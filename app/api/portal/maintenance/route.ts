@@ -15,4 +15,8 @@ export async function POST(req: Request) {
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 08b1079cffd29c4602572c01106db736ba0781b0
