@@ -2,6 +2,19 @@
 import { useEffect, useState } from "react";
 import { supabase, money, fmtDate } from "@/lib/supabase";
 
+function buildMessage(p: any, e: string) {
+  const tenant = p.contracts?.tenants?.full_name ?? "there";
+  const property = p.contracts?.properties?.name ?? "your unit";
+  const amount = money(p.amount);
+  const due = fmtDate(p.due_date);
+  const word = e === "overdue" ? "was due" : "is due";
+  return `Hi ${tenant}, this is a reminder that your rent of ${amount} for ${property} ${word} on ${due}. Please let us know once payment is sent. Thank you! — BOIG`;
+}
+
+function digitsOnly(phone: string) {
+  return (phone || "").replace(/[^0-9+]/g, "");
+}
+
 export default function Payments() {
   const [items, setItems] = useState<any[]>([]);
   const [filter, setFilter] = useState("all");
@@ -10,7 +23,7 @@ export default function Payments() {
   const load = async () => {
     const { data } = await supabase
       .from("payments")
-      .select("*, contracts(properties(name), tenants(full_name))")
+      .select("*, contracts(properties(name), tenants(full_name, email, phone))")
       .order("due_date", { ascending: false });
     setItems(data ?? []);
   };
@@ -54,19 +67,39 @@ export default function Payments() {
       <p className="text-xs text-ink/40">Payments are generated from each lease with the "Generate payments" button.</p>
 
       <div className="card overflow-x-auto">
-        <table className="w-full min-w-[680px]">
+        <table className="w-full min-w-[820px]">
           <thead><tr><th className="th">Property / Tenant</th><th className="th">Due date</th><th className="th">Amount</th><th className="th">Status</th><th className="th"></th></tr></thead>
           <tbody>
             {visible.map((p) => {
               const e = state(p);
+              const tenant = p.contracts?.tenants;
+              const msg = buildMessage(p, e);
+              const phone = digitsOnly(tenant?.phone);
               return (
                 <tr key={p.id}>
-                  <td className="td"><p className="font-semibold">{p.contracts?.properties?.name}</p><p className="text-xs text-ink/50">{p.contracts?.tenants?.full_name}</p></td>
+                  <td className="td"><p className="font-semibold">{p.contracts?.properties?.name}</p><p className="text-xs text-ink/50">{tenant?.full_name}</p></td>
                   <td className="td">{fmtDate(p.due_date)}{p.paid_date && <p className="text-xs text-sage">Paid {fmtDate(p.paid_date)}</p>}</td>
                   <td className="td font-semibold">{money(p.amount)}</td>
                   <td className="td"><span className={`badge ${badge(e)}`}>{e}</span></td>
                   <td className="td text-right whitespace-nowrap">
-                    {e !== "paid" && <button className="btn-ghost mr-1" onClick={() => markPaid(p)}>Mark paid</button>}
+                    {e !== "paid" && (
+                      <>
+                        {phone && (
+                          <a className="btn-ghost mr-1" title="WhatsApp"
+                            href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`}
+                            target="_blank" rel="noopener noreferrer">WhatsApp</a>
+                        )}
+                        {phone && (
+                          <a className="btn-ghost mr-1" title="SMS"
+                            href={`sms:${phone}?&body=${encodeURIComponent(msg)}`}>SMS</a>
+                        )}
+                        {tenant?.email && (
+                          <a className="btn-ghost mr-1" title="Email"
+                            href={`mailto:${tenant.email}?subject=${encodeURIComponent("Rent reminder")}&body=${encodeURIComponent(msg)}`}>Email</a>
+                        )}
+                        <button className="btn-ghost mr-1" onClick={() => markPaid(p)}>Mark paid</button>
+                      </>
+                    )}
                     <button className="btn-ghost text-danger" onClick={() => remove(p.id)}>Delete</button>
                   </td>
                 </tr>
