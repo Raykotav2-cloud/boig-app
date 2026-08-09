@@ -1,6 +1,3 @@
-rm -rf app/reports
-mkdir -p app/reports
-cat > app/reports/page.tsx << 'ENDOFFILE'
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { supabase, money, fmtDate } from "@/lib/supabase";
@@ -64,7 +61,7 @@ export default function Reports() {
 
   const inRange = (d: string | null) => {
     if (!d) return false;
-    if (!range) return true;
+    if (!range) return true; // "all"
     return d >= range.start && d <= range.end;
   };
 
@@ -192,5 +189,3 @@ export default function Reports() {
     </div>
   );
 }
-ENDOFFILE
-ls -la app/reports/
