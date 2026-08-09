@@ -148,13 +148,13 @@ export default function Properties() {
                               <li key={d.name} className="flex items-center justify-between text-sm border-t border-white/5 pt-1.5 first:border-0 first:pt-0">
                                 <span className="truncate">{d.name.replace(/^\d+-/, "")}
                                   <span className="text-xs text-ink/40 ml-2">{fmtSize(d.metadata?.size ?? 0)}</span>
-                              </span>
-                              <span className="whitespace-nowrap">
-                                <button className="btn-ghost mr-1" onClick={() => downloadDoc(p.id, d.name)}>View</button>
+                                </span>
+                                <span className="whitespace-nowrap">
+                                  <button className="btn-ghost mr-1" onClick={() => downloadDoc(p.id, d.name)}>View</button>
                                   <button className="btn-ghost text-danger" onClick={() => deleteDoc(p.id, d.name)}>Delete</button>
-                              </span>
-                            </li>
-                          ))}
+                                </span>
+                              </li>
+                            ))}
                           </ul>
                         )}
                       </div>
