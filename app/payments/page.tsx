@@ -91,7 +91,7 @@ export default function Payments() {
                       <>
                         {phone && (
                           <a className="btn-ghost mr-1" title="WhatsApp"
-                            href={`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`}
+                            href={`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`}
                             target="_blank" rel="noopener noreferrer">WhatsApp</a>
                         )}
                         {phone && (
