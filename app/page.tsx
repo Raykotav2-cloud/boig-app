@@ -5,6 +5,32 @@ import Link from "next/link";
 
 export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
+  const [lastCheck, setLastCheck] = useState<string | null>(null);
+  const [checkLoaded, setCheckLoaded] = useState(false);
+
+  const loadLastCheck = async () => {
+    const { data } = await supabase
+      .from("reminder_checks")
+      .select("checked_at")
+      .order("checked_at", { ascending: false })
+      .limit(1);
+    setLastCheck(data?.[0]?.checked_at ?? null);
+    setCheckLoaded(true);
+  };
+
+  const markRemindersSent = async () => {
+    await supabase.from("reminder_checks").insert({});
+    loadLastCheck();
+  };
+
+  const daysSince = (dateStr: string | null) => {
+    if (!dateStr) return Infinity;
+    const then = new Date(dateStr + "T00:00:00");
+    const now = new Date();
+    return Math.floor((now.getTime() - then.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  useEffect(() => { loadLastCheck(); }, []);
 
   useEffect(() => {
     (async () => {
@@ -52,6 +78,21 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-sm text-ink/50">Your rental portfolio at a glance</p>
       </header>
+
+      {checkLoaded && daysSince(lastCheck) >= 5 && (
+        <div className="card p-4 border-gold/40 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-bold text-gold">
+              {lastCheck ? `It's been ${daysSince(lastCheck)} days` : "You haven't sent reminders yet"}
+            </p>
+            <p className="text-sm text-ink/50">Time to check Payments and send rent reminders to tenants.</p>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/payments" className="btn">Go to Payments</Link>
+            <button className="btn-ghost" onClick={markRemindersSent}>Mark as done</button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {kpis.map((k) => (
