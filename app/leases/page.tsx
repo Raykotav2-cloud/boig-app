@@ -51,7 +51,8 @@ export default function Leases() {
       );
       if (!replace) return;
       await supabase.from("payments").delete().eq("contract_id", c.id);
-    } const n = Number(prompt("How many months of payments to generate from the lease start?", "12"));
+    }
+    const n = Number(prompt("How many months of payments to generate from the lease start?", "12"));
     if (!n || n < 1) return;
     const start = new Date(c.start_date + "T00:00:00");
     const rows = Array.from({ length: n }, (_, i) => {
@@ -66,6 +67,16 @@ export default function Leases() {
     if (!confirm("Delete lease? Its payments will also be deleted.")) return;
     await supabase.from("contracts").delete().eq("id", id);
     load();
+  };
+
+  const copyPortalLink = async (c: any) => {
+    const url = `${window.location.origin}/portal/${c.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert(`Portal link copied!\n\n${url}\n\nSend this to ${c.tenants?.full_name ?? "the tenant"}.`);
+    } catch {
+      prompt("Copy this link:", url);
+    }
   };
 
   return (
@@ -113,6 +124,7 @@ export default function Leases() {
                 <td className="td"><span className={`badge ${c.status === "active" ? "bg-sage/15 text-sage" : "bg-white/10 text-ink/50"}`}>{c.status}</span></td>
                 <td className="td text-right whitespace-nowrap">
                   <button className="btn-ghost mr-1" onClick={() => generatePayments(c)}>Generate payments</button>
+                  <button className="btn-ghost mr-1" onClick={() => copyPortalLink(c)}>Portal link</button>
                   <button className="btn-ghost mr-1" onClick={() => { setForm(c); setOpen(true); }}>Edit</button>
                   <button className="btn-ghost text-danger" onClick={() => remove(c.id)}>Delete</button>
                 </td>

@@ -1,9 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import Sidebar from "@/components/Sidebar";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isPublic = pathname?.startsWith("/portal");
   const [session, setSession] = useState<any>(undefined);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +26,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     setBusy(false);
     if (error) setError("Invalid email or password.");
   };
+
+  if (isPublic) return <>{children}</>;
 
   if (session === undefined)
     return <div className="min-h-screen bg-paper flex items-center justify-center text-ink/50">Loading…</div>;
@@ -52,5 +58,10 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       </div>
     );
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full">{children}</main>
+    </div>
+  );
 }
