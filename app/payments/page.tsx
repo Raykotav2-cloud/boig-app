@@ -7,10 +7,13 @@ function buildMessage(p: any, e: string) {
   const property = p.contracts?.properties?.name ?? "your unit";
   const amount = money(p.amount);
   const due = fmtDate(p.due_date);
+  const wave = "\u{1F44B}";
+  const smile = "\u{1F60A}";
+  const pray = "\u{1F64F}";
   if (e === "overdue") {
-    return `Hi ${tenant}! 👋 Just a gentle reminder that the ${amount} rent payment for ${property} was due on ${due} and we haven't received it yet. If you've already sent it, just let us know! Otherwise, whenever you get a chance, we'd really appreciate it. 🙏`;
+    return `Hi ${tenant}! ${wave} Just a gentle reminder that the ${amount} rent payment for ${property} was due on ${due} and we haven't received it yet. If you've already sent it, just let us know! Otherwise, whenever you get a chance, we'd really appreciate it. ${pray}`;
   }
-  return `Hi ${tenant}! 😊 Just a friendly reminder that the ${amount} rent payment for ${property} will be due on ${due}. Whenever you have a chance, please let us know once the payment has been sent.\nThank you so much! We really appreciate it. 🙏`;
+  return `Hi ${tenant}! ${smile} Just a friendly reminder that the ${amount} rent payment for ${property} will be due on ${due}. Whenever you have a chance, please let us know once the payment has been sent.\nThank you so much! We really appreciate it. ${pray}`;
 }
 
 function digitsOnly(phone: string) {
