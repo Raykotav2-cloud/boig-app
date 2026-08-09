@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import { supabase, money, fmtDate } from "@/lib/supabase";
 
 function buildMessage(p: any, e: string) {
-  const tenant = p.contracts?.tenants?.full_name ?? "there";
+  const tenant = p.contracts?.tenants?.full_name?.split(" ")[0] ?? "there";
   const property = p.contracts?.properties?.name ?? "your unit";
   const amount = money(p.amount);
   const due = fmtDate(p.due_date);
-  const word = e === "overdue" ? "was due" : "is due";
-  return `Hi ${tenant}, this is a reminder that your rent of ${amount} for ${property} ${word} on ${due}. Please let us know once payment is sent. Thank you! — BOIG`;
+  if (e === "overdue") {
+    return `Hi ${tenant}! 👋 Just a gentle reminder that the ${amount} rent payment for ${property} was due on ${due} and we haven't received it yet. If you've already sent it, just let us know! Otherwise, whenever you get a chance, we'd really appreciate it. 🙏`;
+  }
+  return `Hi ${tenant}! 😊 Just a friendly reminder that the ${amount} rent payment for ${property} will be due on ${due}. Whenever you have a chance, please let us know once the payment has been sent.\nThank you so much! We really appreciate it. 🙏`;
 }
 
 function digitsOnly(phone: string) {
