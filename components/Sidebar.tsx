@@ -12,6 +12,7 @@ const links = [
   { href: "/payments", label: "Payments", icon: "$" },
   { href: "/expenses", label: "Expenses", icon: "↧" },
   { href: "/maintenance", label: "Maintenance", icon: "⚒" },
+  { href: "/reports", label: "Reports", icon: "▤" },
 ];
 
 export default function Sidebar() {
