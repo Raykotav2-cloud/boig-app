@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>(null);
   const [lastCheck, setLastCheck] = useState<string | null>(null);
   const [checkLoaded, setCheckLoaded] = useState(false);
+  const [expiring, setExpiring] = useState<any[]>([]);
 
   const loadLastCheck = async () => {
     const { data } = await supabase
@@ -36,12 +37,23 @@ export default function Dashboard() {
     (async () => {
       const today = new Date().toISOString().slice(0, 10);
       const month = today.slice(0, 7);
-      const [props, leases, payments, expenses, maint] = await Promise.all([
+      const in60 = new Date();
+      in60.setDate(in60.getDate() + 60);
+      const in60Str = in60.toISOString().slice(0, 10);
+
+      const [props, leases, payments, expenses, maint, leasesExpiring] = await Promise.all([
         supabase.from("properties").select("id,status"),
         supabase.from("contracts").select("id,status,monthly_rent").eq("status", "active"),
         supabase.from("payments").select("id,amount,status,due_date,paid_date"),
         supabase.from("expenses").select("amount,expense_date"),
         supabase.from("maintenance_requests").select("id,status,category,description,priority").neq("status", "resolved"),
+        supabase.from("contracts")
+          .select("id,end_date,properties(name),tenants(full_name)")
+          .eq("status", "active")
+          .not("end_date", "is", null)
+          .lte("end_date", in60Str)
+          .gte("end_date", today)
+          .order("end_date", { ascending: true }),
       ]);
       const pays = payments.data ?? [];
       const overdue = pays.filter((p) => p.status !== "paid" && p.due_date < today);
@@ -60,6 +72,7 @@ export default function Dashboard() {
         overdue,
         openMaint: maint.data ?? [],
       });
+      setExpiring(leasesExpiring.data ?? []);
     })();
   }, []);
 
@@ -91,6 +104,21 @@ export default function Dashboard() {
             <Link href="/payments" className="btn">Go to Payments</Link>
             <button className="btn-ghost" onClick={markRemindersSent}>Mark as done</button>
           </div>
+        </div>
+      )}
+
+      {expiring.length > 0 && (
+        <div className="card p-4 border-danger/40">
+          <p className="font-bold text-danger mb-2">Lease{expiring.length > 1 ? "s" : ""} ending soon</p>
+          <ul className="space-y-1">
+            {expiring.map((c: any) => (
+              <li key={c.id} className="flex justify-between text-sm border-t border-white/5 pt-1.5 first:border-0 first:pt-0">
+                <span>{c.properties?.name} — {c.tenants?.full_name}</span>
+                <span className="font-semibold">Ends {fmtDate(c.end_date)}</span>
+              </li>
+            ))}
+          </ul>
+          <Link href="/leases" className="btn-ghost mt-2 inline-block">Go to Leases</Link>
         </div>
       )}
 
