@@ -1,8 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase, money, fmtDate } from "@/lib/supabase";
+import { generateLeaseDocx } from "@/lib/generateLeaseDoc";
 
-const empty = { property_id: "", tenant_id: "", start_date: "", end_date: "", monthly_rent: "", deposit: "", payment_day: 5, status: "active" };
+const empty = {
+  property_id: "", tenant_id: "", start_date: "", end_date: "", monthly_rent: "", deposit: "",
+  payment_day: 5, status: "active", payment_method: "zelle", payable_to: "", signed: false, signed_date: "",
+};
 
 export default function Leases() {
   const [items, setItems] = useState<any[]>([]);
@@ -10,10 +14,11 @@ export default function Leases() {
   const [tenants, setTenants] = useState<any[]>([]);
   const [form, setForm] = useState<any>(empty);
   const [open, setOpen] = useState(false);
+  const [generating, setGenerating] = useState<string | null>(null);
 
   const load = async () => {
     const [c, p, t] = await Promise.all([
-      supabase.from("contracts").select("*, properties(name), tenants(full_name)").order("created_at", { ascending: false }),
+      supabase.from("contracts").select("*, properties(name,address,appliances), tenants(full_name,email,phone)").order("created_at", { ascending: false }),
       supabase.from("properties").select("id,name").order("name"),
       supabase.from("tenants").select("id,full_name").order("full_name"),
     ]);
@@ -30,6 +35,7 @@ export default function Leases() {
       monthly_rent: Number(form.monthly_rent),
       deposit: Number(form.deposit) || 0,
       payment_day: Number(form.payment_day) || 5,
+      signed_date: form.signed ? (form.signed_date || new Date().toISOString().slice(0, 10)) : null,
     };
     delete payload.properties; delete payload.tenants;
     const { error } = form.id
@@ -41,10 +47,7 @@ export default function Leases() {
   };
 
   const generatePayments = async (c: any) => {
-    const { data: existing } = await supabase
-      .from("payments")
-      .select("id")
-      .eq("contract_id", c.id);
+    const { data: existing } = await supabase.from("payments").select("id").eq("contract_id", c.id);
     if (existing && existing.length > 0) {
       const replace = confirm(
         `This lease already has ${existing.length} payment(s) generated. Press OK to DELETE them and generate a fresh set, or Cancel to keep the existing ones.`
@@ -79,6 +82,23 @@ export default function Leases() {
     }
   };
 
+  const downloadContract = async (c: any) => {
+    setGenerating(c.id);
+    try {
+      const blob = await generateLeaseDocx(c);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Lease-${(c.properties?.name ?? "property").replace(/\s+/g, "-")}-${(c.tenants?.full_name ?? "tenant").replace(/\s+/g, "-")}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert("Could not generate the document: " + e.message);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <header className="flex items-center justify-between">
@@ -105,6 +125,18 @@ export default function Leases() {
             <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
               <option value="active">Active</option><option value="ended">Ended</option>
             </select></div>
+          <div><span className="label">Payment method</span>
+            <select className="input" value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}>
+              <option value="zelle">Zelle</option><option value="cash">Cash</option><option value="other">Other</option>
+            </select></div>
+          <div><span className="label">Payable to</span><input className="input" value={form.payable_to ?? ""} onChange={(e) => setForm({ ...form, payable_to: e.target.value })} placeholder="Berthet-Ortega Investment Group" /></div>
+          <div className="md:col-span-2 flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2">
+            <input type="checkbox" id="signed" checked={!!form.signed} onChange={(e) => setForm({ ...form, signed: e.target.checked })} />
+            <label htmlFor="signed" className="text-sm font-semibold">Lease signed</label>
+            {form.signed && (
+              <input type="date" className="input w-auto ml-auto" value={form.signed_date ?? ""} onChange={(e) => setForm({ ...form, signed_date: e.target.value })} />
+            )}
+          </div>
           <div className="md:col-span-2 flex gap-2 justify-end">
             <button className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
             <button className="btn" onClick={save}>{form.id ? "Save changes" : "Create lease"}</button>
@@ -113,7 +145,7 @@ export default function Leases() {
       )}
 
       <div className="card overflow-x-auto">
-        <table className="w-full min-w-[720px]">
+        <table className="w-full min-w-[820px]">
           <thead><tr><th className="th">Property / Tenant</th><th className="th">Term</th><th className="th">Rent</th><th className="th">Status</th><th className="th"></th></tr></thead>
           <tbody>
             {items.map((c) => (
@@ -121,11 +153,17 @@ export default function Leases() {
                 <td className="td"><p className="font-semibold">{c.properties?.name}</p><p className="text-xs text-ink/50">{c.tenants?.full_name}</p></td>
                 <td className="td">{fmtDate(c.start_date)} → {fmtDate(c.end_date)}<p className="text-xs text-ink/50">Due day {c.payment_day}</p></td>
                 <td className="td font-semibold">{money(c.monthly_rent)}</td>
-                <td className="td"><span className={`badge ${c.status === "active" ? "bg-sage/15 text-sage" : "bg-white/10 text-ink/50"}`}>{c.status}</span></td>
+                <td className="td">
+                  <span className={`badge ${c.status === "active" ? "bg-sage/15 text-sage" : "bg-white/10 text-ink/50"}`}>{c.status}</span>
+                  <span className={`badge ml-1 ${c.signed ? "bg-sage/15 text-sage" : "bg-gold/15 text-gold"}`}>{c.signed ? "Signed" : "Unsigned"}</span>
+                </td>
                 <td className="td text-right whitespace-nowrap">
+                  <button className="btn-ghost mr-1" onClick={() => downloadContract(c)} disabled={generating === c.id}>
+                    {generating === c.id ? "Generating…" : "Generate contract"}
+                  </button>
                   <button className="btn-ghost mr-1" onClick={() => generatePayments(c)}>Generate payments</button>
                   <button className="btn-ghost mr-1" onClick={() => copyPortalLink(c)}>Portal link</button>
-                  <button className="btn-ghost mr-1" onClick={() => { setForm(c); setOpen(true); }}>Edit</button>
+                  <button className="btn-ghost mr-1" onClick={() => { setForm({ ...c, end_date: c.end_date ?? "", signed_date: c.signed_date ?? "" }); setOpen(true); }}>Edit</button>
                   <button className="btn-ghost text-danger" onClick={() => remove(c.id)}>Delete</button>
                 </td>
               </tr>
