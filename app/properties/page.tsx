@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase, money } from "@/lib/supabase";
 
-const empty = { name: "", address: "", type: "apartment", bedrooms: 1, bathrooms: 1, monthly_rent: "", status: "available" };
+const empty = { name: "", address: "", type: "apartment", bedrooms: 1, bathrooms: 1, monthly_rent: "", status: "available", appliances: "" };
 const BUCKET = "documents";
 
 function fmtSize(bytes: number) {
@@ -105,6 +105,11 @@ export default function Properties() {
             <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
               <option value="available">Available</option><option value="rented">Rented</option><option value="maintenance">Under maintenance</option>
             </select></div>
+          <div className="md:col-span-2">
+            <span className="label">Appliances included (inventory)</span>
+            <textarea className="input" rows={2} value={form.appliances ?? ""} onChange={(e) => setForm({ ...form, appliances: e.target.value })}
+              placeholder="Washer and Dryer, Microwave, Refrigerator, Stove, Water heater, indoor and outdoor A/C unit" />
+          </div>
           <div className="md:col-span-2 flex gap-2 justify-end">
             <button className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
             <button className="btn" onClick={save}>{form.id ? "Save changes" : "Create property"}</button>
