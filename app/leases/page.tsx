@@ -5,7 +5,7 @@ import { generateLeaseDocx } from "@/lib/generateLeaseDoc";
 import { generatePaymentsForContract } from "@/lib/payments";
 
 const empty = {
-  property_id: "", tenant_id: "", start_date: "", end_date: "", monthly_rent: "", deposit: "",
+  property_id: "", tenant_id: "", co_tenants: "", start_date: "", end_date: "", monthly_rent: "", deposit: "",
   payment_day: 5, status: "active", payment_method: "zelle", payable_to: "", signed: false, signed_date: "",
 };
 
@@ -102,6 +102,9 @@ export default function Leases() {
             <select className="input" value={form.tenant_id} onChange={(e) => setForm({ ...form, tenant_id: e.target.value })}>
               <option value="">Select…</option>{tenants.map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
             </select></div>
+          <div className="md:col-span-2"><span className="label">Additional tenants on the lease (optional)</span>
+            <input className="input" value={form.co_tenants ?? ""} onChange={(e) => setForm({ ...form, co_tenants: e.target.value })}
+              placeholder="Melisa Rabago" /></div>
           <div><span className="label">Start date</span><input type="date" className="input" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></div>
           <div><span className="label">End date (optional)</span><input type="date" className="input" value={form.end_date ?? ""} onChange={(e) => setForm({ ...form, end_date: e.target.value })} /></div>
           <div><span className="label">Monthly rent</span><input type="number" className="input" value={form.monthly_rent} onChange={(e) => setForm({ ...form, monthly_rent: e.target.value })} /></div>
