@@ -4,15 +4,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "#0A0C10",      // fondo negro
-        surface: "#13161D",    // tarjetas
-        ink: "#E9ECF2",        // texto claro
+        paper: "#0A0C10",      // page background
+        surface: "#13161D",    // cards
+        ink: "#E9ECF2",        // body text
         inkSoft: "#1A1F28",    // hover
-        blue: "#1E88E5",       // azul BOIG
+        blue: "#1E88E5",       // BOIG blue
         blueDark: "#1565C0",
-        gold: "#D4AF37",       // dorado BOIG
+        gold: "#D4AF37",       // BOIG gold
         goldDark: "#B8912B",
-        copper: "#D4AF37",     // alias para compatibilidad
+        copper: "#D4AF37",     // legacy alias
         copperDark: "#B8912B",
         sage: "#4CC38A",
         danger: "#E36060",

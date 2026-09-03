@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { supabase, money, fmtDate, EXPENSE_CATEGORIES } from "@/lib/supabase";
-
-const LABELS: Record<string, string> = { water: "Water", electricity: "Electricity", trash: "Trash", wifi: "WiFi", hoa: "HOA", other: "Other" };
+import { supabase, money, fmtDate, EXPENSE_CATEGORIES, EXPENSE_LABELS as LABELS } from "@/lib/supabase";
 const empty = { property_id: "", category: "water", amount: "", expense_date: new Date().toISOString().slice(0, 10), notes: "" };
 
 export default function Expenses() {

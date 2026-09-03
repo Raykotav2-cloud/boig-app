@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase, money, fmtDate } from "@/lib/supabase";
 import { generateLeaseDocx } from "@/lib/generateLeaseDoc";
+import { generatePaymentsForContract } from "@/lib/payments";
 
 const empty = {
   property_id: "", tenant_id: "", start_date: "", end_date: "", monthly_rent: "", deposit: "",
@@ -47,23 +48,8 @@ export default function Leases() {
   };
 
   const generatePayments = async (c: any) => {
-    const { data: existing } = await supabase.from("payments").select("id").eq("contract_id", c.id);
-    if (existing && existing.length > 0) {
-      const replace = confirm(
-        `This lease already has ${existing.length} payment(s) generated. Press OK to DELETE them and generate a fresh set, or Cancel to keep the existing ones.`
-      );
-      if (!replace) return;
-      await supabase.from("payments").delete().eq("contract_id", c.id);
-    }
-    const n = Number(prompt("How many months of payments to generate from the lease start?", "12"));
-    if (!n || n < 1) return;
-    const start = new Date(c.start_date + "T00:00:00");
-    const rows = Array.from({ length: n }, (_, i) => {
-      const d = new Date(start.getFullYear(), start.getMonth() + i, c.payment_day || 5);
-      return { contract_id: c.id, due_date: d.toISOString().slice(0, 10), amount: c.monthly_rent, status: "pending" };
-    });
-    const { error } = await supabase.from("payments").insert(rows);
-    alert(error ? error.message : `${n} payments generated. Check them in Payments.`);
+    const msg = await generatePaymentsForContract(c);
+    if (msg) alert(msg + " Check them in Payments.");
   };
 
   const remove = async (id: string) => {

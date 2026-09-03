@@ -1,6 +1,7 @@
 -- ============================================================
--- BOIG · Supabase Schema
+-- BOIG · Supabase Schema (initial install)
 -- Run in: Supabase Dashboard > SQL Editor > New query
+-- Then run every file in supabase/migrations/ in order.
 -- ============================================================
 
 create table properties (

@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { supabase, money, fmtDate, MAINTENANCE_CATEGORIES } from "@/lib/supabase";
-
-const LABELS: Record<string, string> = { ac: "A/C", plumbing: "Plumbing", electrical: "Electrical", paint: "Paint", other: "Other" };
+import { supabase, money, fmtDate, MAINTENANCE_CATEGORIES, MAINTENANCE_LABELS as LABELS } from "@/lib/supabase";
 const empty = { property_id: "", category: "ac", description: "", priority: "medium", status: "open", reported_date: new Date().toISOString().slice(0, 10), cost: "" };
 
 export default function Maintenance() {

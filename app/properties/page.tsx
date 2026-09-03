@@ -1,23 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { supabase, money } from "@/lib/supabase";
 
 const empty = { name: "", address: "", type: "apartment", bedrooms: 1, bathrooms: 1, monthly_rent: "", status: "available", appliances: "" };
-const BUCKET = "documents";
-
-function fmtSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export default function Properties() {
   const [items, setItems] = useState<any[]>([]);
   const [form, setForm] = useState<any>(empty);
   const [open, setOpen] = useState(false);
-  const [docsFor, setDocsFor] = useState<string | null>(null);
-  const [docs, setDocs] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
 
   const load = async () => {
     const { data } = await supabase.from("properties").select("*").order("created_at", { ascending: false });
@@ -43,40 +34,6 @@ export default function Properties() {
 
   const badge = (s: string) =>
     s === "rented" ? "bg-sage/15 text-sage" : s === "maintenance" ? "bg-gold/15 text-gold" : "bg-white/10 text-ink/70";
-
-  const loadDocs = async (propertyId: string) => {
-    const { data, error } = await supabase.storage.from(BUCKET).list(propertyId, { sortBy: { column: "created_at", order: "desc" } });
-    if (error) { alert(error.message); return; }
-    setDocs(data ?? []);
-  };
-
-  const toggleDocs = async (propertyId: string) => {
-    if (docsFor === propertyId) { setDocsFor(null); setDocs([]); return; }
-    setDocsFor(propertyId);
-    await loadDocs(propertyId);
-  };
-
-  const uploadDoc = async (propertyId: string, file: File) => {
-    setUploading(true);
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `${propertyId}/${Date.now()}-${safeName}`;
-    const { error } = await supabase.storage.from(BUCKET).upload(path, file);
-    setUploading(false);
-    if (error) return alert(error.message);
-    loadDocs(propertyId);
-  };
-
-  const downloadDoc = async (propertyId: string, name: string) => {
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(`${propertyId}/${name}`, 60);
-    if (error || !data) return alert(error?.message ?? "Could not open file");
-    window.open(data.signedUrl, "_blank");
-  };
-
-  const deleteDoc = async (propertyId: string, name: string) => {
-    if (!confirm("Delete this document?")) return;
-    await supabase.storage.from(BUCKET).remove([`${propertyId}/${name}`]);
-    loadDocs(propertyId);
-  };
 
   return (
     <div className="space-y-4">
@@ -122,51 +79,20 @@ export default function Properties() {
           <thead><tr><th className="th">Property</th><th className="th">Type</th><th className="th">Rent</th><th className="th">Status</th><th className="th"></th></tr></thead>
           <tbody>
             {items.map((p) => (
-              <>
-                <tr key={p.id}>
-                  <td className="td"><p className="font-semibold">{p.name}</p><p className="text-xs text-ink/50">{p.address}</p></td>
-                  <td className="td capitalize">{p.type} · {p.bedrooms}BD/{p.bathrooms}BA</td>
-                  <td className="td font-semibold">{money(p.monthly_rent)}</td>
-                  <td className="td"><span className={`badge ${badge(p.status)}`}>{p.status}</span></td>
-                  <td className="td text-right whitespace-nowrap">
-                    <button className="btn-ghost mr-1" onClick={() => toggleDocs(p.id)}>
-                      {docsFor === p.id ? "Hide docs" : "Documents"}
-                    </button>
-                    <button className="btn-ghost mr-1" onClick={() => { setForm(p); setOpen(true); }}>Edit</button>
-                    <button className="btn-ghost text-danger" onClick={() => remove(p.id)}>Delete</button>
-                  </td>
-                </tr>
-                {docsFor === p.id && (
-                  <tr key={`${p.id}-docs`}>
-                    <td colSpan={5} className="td bg-black/20">
-                      <div className="py-2 space-y-2">
-                        <label className="btn-ghost cursor-pointer inline-block">
-                          {uploading ? "Uploading…" : "+ Upload document"}
-                          <input type="file" className="hidden" disabled={uploading}
-                            onChange={(e) => e.target.files?.[0] && uploadDoc(p.id, e.target.files[0])} />
-                        </label>
-                        {docs.length === 0 ? (
-                          <p className="text-sm text-ink/40">No documents uploaded yet.</p>
-                        ) : (
-                          <ul className="space-y-1">
-                            {docs.map((d) => (
-                              <li key={d.name} className="flex items-center justify-between text-sm border-t border-white/5 pt-1.5 first:border-0 first:pt-0">
-                                <span className="truncate">{d.name.replace(/^\d+-/, "")}
-                                  <span className="text-xs text-ink/40 ml-2">{fmtSize(d.metadata?.size ?? 0)}</span>
-                                </span>
-                                <span className="whitespace-nowrap">
-                                  <button className="btn-ghost mr-1" onClick={() => downloadDoc(p.id, d.name)}>View</button>
-                                  <button className="btn-ghost text-danger" onClick={() => deleteDoc(p.id, d.name)}>Delete</button>
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </>
+              <tr key={p.id}>
+                <td className="td">
+                  <Link href={`/properties/${p.id}`} className="font-semibold hover:text-blue">{p.name}</Link>
+                  <p className="text-xs text-ink/50">{p.address}</p>
+                </td>
+                <td className="td capitalize">{p.type} · {p.bedrooms}BD/{p.bathrooms}BA</td>
+                <td className="td font-semibold">{money(p.monthly_rent)}</td>
+                <td className="td"><span className={`badge ${badge(p.status)}`}>{p.status}</span></td>
+                <td className="td text-right whitespace-nowrap">
+                  <Link href={`/properties/${p.id}`} className="btn-ghost mr-1">Account</Link>
+                  <button className="btn-ghost mr-1" onClick={() => { setForm(p); setOpen(true); }}>Edit</button>
+                  <button className="btn-ghost text-danger" onClick={() => remove(p.id)}>Delete</button>
+                </td>
+              </tr>
             ))}
             {items.length === 0 && <tr><td className="td text-ink/50" colSpan={5}>No properties yet. Create your first one with "+ New".</td></tr>}
           </tbody>
